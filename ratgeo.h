@@ -16,6 +16,8 @@ class RatPt2
      ratq_t _xy[2];
 };
 
+extern std::ostream& operator<<(std::ostream&, const RatPt2&);
+
 // 2-dimensinal point
 class RatLine2
 {
@@ -29,5 +31,6 @@ class RatLine2
      RatPt2 _pt[2];
 };
 
+extern std::ostream& operator<<(std::ostream&, const RatLine2&);
 
 
