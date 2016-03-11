@@ -14,7 +14,7 @@ class RatPt2
      RatPt2(ratq_t x=0, ratq_t y=0) :
          _xy{x, y}
          {}
-     ratq_t xy(unsigned i) const { return _xy[i]; }
+     const ratq_t& xy(unsigned i) const { return _xy[i]; }
      void xy(unsigned i, ratq_t& v) { _xy[i] = v; }
   private:
      ratq_t _xy[2];
@@ -22,16 +22,22 @@ class RatPt2
 
 extern std::ostream& operator<<(std::ostream&, const RatPt2&);
 
+extern RatPt2::ratq_t distance2(const RatPt2&, const RatPt2&);
+
 // 2-dimensinal point
 class RatLine2
 {
   public:
+     typedef RatPt2::ratq_t ratq_t;
      RatLine2(const RatPt2& pt0=RatPt2(0, 0), const RatPt2& pt1=RatPt2(0, 1)) :
         _pt{pt0, pt1}
         {}
      const RatPt2& pt(unsigned i) const { return _pt[i]; }
      void pt(unsigned i, RatPt2& p) { _pt[i] = p; }
+     ratq_t distance2(const RatPt2& e) const;
+     int side(const RatPt2& e) const; // 1, 0, -1
   private:
+     ratq_t dist_numerator(const RatPt2& e) const;
      RatPt2 _pt[2];
 };
 
