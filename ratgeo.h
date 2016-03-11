@@ -1,4 +1,8 @@
 // -*-c++-*-
+// -*- c++ -*-
+#if !defined(RATGEOX_H)
+#define RATGEOX_H
+
 #include <iosfwd>
 #include <gmpxx.h>
 
@@ -33,4 +37,6 @@ class RatLine2
 
 extern std::ostream& operator<<(std::ostream&, const RatLine2&);
 
+extern bool intersection(RatPt2&, const RatLine2& l0, const RatLine2& l1);
 
+#endif /* RATGEOX_H */
