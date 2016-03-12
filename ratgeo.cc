@@ -41,7 +41,7 @@ RatLine2::ratq_t RatLine2::dist_numerator(const RatPt2& e) const
     const ratq_t
         &x1 = _pt[0].xy(0), y1 = _pt[0].xy(1),
         &x2 = _pt[1].xy(0), y2 = _pt[1].xy(1);
-    const ratq_t dnum = 
+    const ratq_t dnum =
         (y2 - y1)*e.xy(0) - (x2 - x1)*e.xy(1) + x2*y1 - y2*x1;
     return dnum;
 }
@@ -51,9 +51,9 @@ RatLine2::ratq_t RatLine2::dist_numerator(const RatPt2& e) const
 bool intersection(RatPt2& result, const RatLine2& l0, const RatLine2& l1)
 {
     typedef RatPt2::ratq_t ratq_t;
-    
+
     // l0 -> (x1,y1)--(x2,y2)  & l1 -> (x2,y2)--(x3,y4)
-    const ratq_t 
+    const ratq_t
         &x1 = l0.pt(0).xy(0), y1 = l0.pt(0).xy(1),
         &x2 = l0.pt(1).xy(0), y2 = l0.pt(1).xy(1),
         &x3 = l1.pt(0).xy(0), y3 = l1.pt(0).xy(1),
@@ -85,6 +85,43 @@ bool intersection(RatPt2& result, const RatLine2& l0, const RatLine2& l1)
     return ret;
 }
 
+ostream& operator<<(ostream& o, const RatSeg2& s)
+{
+    return o << "[S " << s.pt(0) << ", " << s.pt(1) << "]";
+}
+
+static bool ptline_in_seg(const RatPt2& p, const RatLine2& line)
+{
+    bool inside = true;
+    for (unsigned di = 0; (di < 2) && inside; ++di)
+    {
+        const RatPt2::ratq_t 
+            &l0 = line.pt(0).xy(di),
+            &l1 = line.pt(1).xy(di),
+            &pq = p.xy(di);
+        inside = 
+            ((l0 <= pq) && (pq <= l1)) ||
+            ((l1 <= pq) && (pq <= l0));
+    }
+    return inside;
+}
+
+bool intersection(RatPt2& p, const RatLine2& line, const RatSeg2& seg)
+{
+    const RatLine2& lseg = seg;
+    bool ret = intersection(p, line, lseg) && ptline_in_seg(p, seg);
+    return ret;
+}
+
+bool intersection(RatPt2& p, const RatSeg2& seg0, const RatSeg2& seg1)
+{
+    const RatLine2 &lseg0 = seg0, &lseg1 = seg1;
+    bool ret = intersection(p, lseg0, lseg1) && 
+        ptline_in_seg(p, seg0) &&
+        ptline_in_seg(p, seg1);
+    return ret;
+}
+
 #if defined(TEST)
 
 #include <cstdlib>
@@ -92,8 +129,8 @@ bool intersection(RatPt2& result, const RatLine2& l0, const RatLine2& l1)
 
 static void usage(const char *p0)
 {
-    cerr << 
-        "Usage:\n" 
+    cerr <<
+        "Usage:\n"
         "  " << p0 << "\n"
         "     [ppdist2 x1 y1 x2 y2]\n"
         "     [ppdist2 x1 x1d  y1 y1d  x2 x2d y2 y2d]\n"
@@ -121,7 +158,6 @@ static RatPt2 args2pt(int argc /* 2 or 4 */, char **argv)
     return RatPt2(rq[0], rq[1]);
 }
 
-
 static int test_pp_distance2(int argc, char **argv)
 {
     int ret = (argc == 4 || argc == 8 ? 0 : 1);
@@ -135,7 +171,7 @@ static int test_pp_distance2(int argc, char **argv)
             points[pi] = args2pt(na, argv + ai);
         }
         RatPt2::ratq_t d2 = distance2(points[0], points[1]);
-        cout << "distance2(" << points[0] << ", " << points[1] << 
+        cout << "distance2(" << points[0] << ", " << points[1] <<
             ") = " << d2 << "\n";
     }
     return ret;
@@ -155,7 +191,7 @@ static int test_lp_distance2(int argc, char **argv)
         }
         const RatLine2 line(points[0], points[1]);
         RatPt2::ratq_t d2 = line. distance2(points[2]);
-        cout << "distance2(" << line << ", " << points[2] << 
+        cout << "distance2(" << line << ", " << points[2] <<
             ") = " << d2 << "\n";
     }
     return ret;
@@ -175,7 +211,7 @@ static int test_lp_side(int argc, char **argv)
         }
         const RatLine2 line(points[0], points[1]);
         int side = line.side(points[2]);
-        cout << "LinePtSide(" << line << ", " << points[2] << 
+        cout << "LinePtSide(" << line << ", " << points[2] <<
             ") = " << side << "\n";
     }
     return ret;
@@ -196,7 +232,7 @@ static int test_intersection(int argc, char **argv)
             for (unsigned pi = 0; pi < 2; ++pi)
             {
                 points[pi] = args2pt(na, argv + ai);
-                ai += na; 
+                ai += na;
             }
             lines[li] = RatLine2(points[0], points[1]);
         }
@@ -210,6 +246,82 @@ static int test_intersection(int argc, char **argv)
         else
         {
             cout << " parallel\n";
+        }
+    }
+    return ret;
+}
+
+static int test_lsintersection(int argc, char **argv)
+{
+    int ret = ((argc == 8) or (argc == 16) ? 0 : 1);
+    if (ret == 0)
+    {
+        const bool denoms = (argc == 16);
+        const unsigned na = denoms ? 4 : 2;
+        RatLine2 line;
+        RatSeg2 seg;
+        int ai = 0;
+        for (unsigned li = 0; li < 2; ++li)
+        {
+            RatPt2 points[2];
+            for (unsigned pi = 0; pi < 2; ++pi)
+            {
+                points[pi] = args2pt(na, argv + ai);
+                ai += na;
+            }
+            if (li == 0) 
+            {
+                line = RatLine2(points[0], points[1]);
+            }
+            else
+            {
+                seg = RatSeg2(points[0], points[1]);
+            }
+        }
+        RatPt2 p;
+        bool has = intersection(p, line, seg);
+        cout << line << " & " << seg;
+        if (has)
+        {
+            cout << " intersected @ " << p << "\n";
+        }
+        else
+        {
+            cout << " not intersected\n";
+        }
+    }
+    return ret;
+}
+
+static int test_ssintersection(int argc, char **argv)
+{
+    int ret = ((argc == 8) or (argc == 16) ? 0 : 1);
+    if (ret == 0)
+    {
+        const bool denoms = (argc == 16);
+        const unsigned na = denoms ? 4 : 2;
+        RatSeg2 segs[2];
+        int ai = 0;
+        for (unsigned li = 0; li < 2; ++li)
+        {
+            RatPt2 points[2];
+            for (unsigned pi = 0; pi < 2; ++pi)
+            {
+                points[pi] = args2pt(na, argv + ai);
+                ai += na;
+            }
+            segs[li] = RatSeg2(points[0], points[1]);
+        }
+        RatPt2 p;
+        bool has = intersection(p, segs[0], segs[1]);
+        cout << segs[0] << " & " << segs[1];
+        if (has)
+        {
+            cout << " intersected @ " << p << "\n";
+        }
+        else
+        {
+            cout << " not intersected\n";
         }
     }
     return ret;
@@ -240,6 +352,14 @@ int main(int argc, char **argv)
          else if (!strcmp(test, "intersection"))
          {
              ret = test_intersection(argc - 2, argv + 2);
+         }
+         else if (!strcmp(test, "lsintersection"))
+         {
+             ret = test_lsintersection(argc - 2, argv + 2);
+         }
+         else if (!strcmp(test, "ssintersection"))
+         {
+             ret = test_ssintersection(argc - 2, argv + 2);
          }
          else
          {

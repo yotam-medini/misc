@@ -32,7 +32,7 @@ ${BINDIR}/ratgeo-test: obj.d/ratgeo-test.o
 	@mkdir -p $(@D)
 	g++ -g -o $@ $< ${LIBGMP}
 
-run-ratgeo-test: ${BINDIR}/ratgeo-test
+ratgeo-test-run: ${BINDIR}/ratgeo-test
 	$< ppdist2 4 0 0 3
 	$< ppdist2 4 7  0 7   0 7  3 7
 	$< lpdist2 0 0 1 0 3 1
@@ -43,6 +43,10 @@ run-ratgeo-test: ${BINDIR}/ratgeo-test
 	$< intersection 1 0  2 0  0 1  0 2
 	$< intersection 2 2  1 2  3 2  1 2  1 2  2 2  1 2  3 2
 	$< intersection -1 -1  1 0  3 3  5 4
+	$< lsintersection 0 0  1 1  1 0  0 1
+	$< lsintersection 0 0  1 1  -1 2  0 1
+	$< ssintersection 0 0  1 1  1 0  0 1
+	$< ssintersection 0 0  1 1  -1 2  0 1
 
 clean:
 	rm -f ${OBJS}
