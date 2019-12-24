@@ -12,7 +12,7 @@ typedef set<int> seti_t;
 class BT {
  public:
   BT(int n, int _sz) :
-   sz(_sz), mid(n/2), n2(n*n), mid2(n2/2), sum2(2*mid), sumsz(sz*mid2),
+   sz(_sz), mid(n/2), n2(n*n), mid2(n2/2), sum2(2*mid2), sumsz(sz*mid2),
    x0(mid - sz/2), y0(0)
    {}
    int sz, mid, n2, mid2, sum2, sumsz, x0, y0;
@@ -61,23 +61,37 @@ class SqrMagic {
     bool ok = false;
     cout << "debug: #pending="<<pending.size() << "\n"; show();
     if (pending.empty()) {
+      int xyend = bt.x0 + bt.sz - 1;
+      int sbdy[4] = {0, 0, 0, 0};
+      for (int k = 0; k < bt.sz; ++k) {
+        sbdy[0] += get(bt.x0, bt.y0 + k);
+        sbdy[1] += get(bt.x0 + k, bt.y0);
+        sbdy[2] += get(xyend, bt.y0 + k);
+        sbdy[0] += get(bt.x0 + k, xyend);
+      }
       ok = true;
+      for (int i = 0; ok && (i < 4); ++i) {
+        ok = sbdy[i] == bt.sumsz;
+      }
     } else {
       int x = bt.x0, y = bt.y0;
-      for (; (x < bt.x0 + bt.sz) && (get(x, y) == -1); ++x) {}
+      for (; (x < bt.x0 + bt.sz) && (get(x, y) != -1); ++x) {}
       if (x == bt.x0 + bt.sz) {
-        for (x = bt.x0; (y < bt.y0 + bt.sz) && (get(x, y) == -1); ++y) {}
+        for (x = bt.x0; (y < bt.y0 + bt.sz) && (get(x, y) != -1); ++y) {}
       }
-      for (seti_t::iterator pi = pending.begin(); (!ok) && (pi != pending.end()); ++pi) {
+      for (seti_t::iterator pi = pending.begin();
+          (!ok) && (pi != pending.end()); ++pi) {
         int v = *pi;
         int vc = bt.sum2 - v;
         seti_t::iterator pic = pending.find(vc);
-        int cx = x, cy = bt.y0 + bt.sz- 1;
+        int cx = x, cy = bt.y0 + bt.sz - 1;
         if (x == 0) {
           cx = bt.x0 + bt.sz - 1;
           if (y != bt.y0) {
             cy = y;
           }
+        } else if (x == bt.x0 + bt.sz - 1) {
+          cx = bt.x0;
         }
         set(x, y, v);
         set(cx, cy, vc);
