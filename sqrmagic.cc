@@ -58,6 +58,25 @@ class SqrMagic {
   }
   bool backtrack(const BT& bt, seti_t& pending) {
     bool ok = false;
+    cout << "debug: #pending="<<pending.size(); << "\n"; show();
+    if (pending.empty()) {
+      ok = True;
+    } else {
+      int x = bt.x0, y = bt.y0;
+      for (; (x < x0 + bt.sz) && (get(x, y) == -1); ++x) {}
+      if (x == x0 + bt.sz) {
+        for (x = x0; (y < y0 + bt.sz) && (get(x, y) == -1); ++y) {}
+      }
+      for (seti_t::iterator pi = pending.begin(); (!ok) && (pi != pending.end());) {
+        if (pi != pending.end()) {
+          ++pi;
+        }
+        int v = *pi;
+        set(x, y, v);
+        int vc = bt.sum2 - v;
+        
+      }
+    }
     return ok;
   }
   int get(int x , int y) const { return _a[ixy(x, y)]; }
