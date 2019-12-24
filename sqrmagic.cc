@@ -9,7 +9,7 @@ typedef vector<int> vi_t;
 
 class SqrMagic {
 public:
- SqrMagic(int _n) : n(_n), _a(n*n, 0) {
+ SqrMagic(int _n) : n(_n), _a(n*n, -1) {
    if (n % 2 == 1) { solve(); }
  }
  void show() const {
@@ -23,7 +23,14 @@ public:
  }
 private:
  void solve() {
-   ;
+   bool ok = true;
+   for (int sz = 1; ok && (sz <= n); sz += 2) {
+     ok = solve_bdy(sz);
+   }
+ }
+ bool solve_bdy(int sz) {
+   bool solved = false;
+   return solved;
  }
  int get(int x , int y) const { return _a[ixy(x, y)]; }
  void set(int x, int y, int v) { _a[ixy(x, y)] = v; }
