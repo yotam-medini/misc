@@ -13,7 +13,7 @@ class BT {
  public:
   BT(int n, int _sz) :
    sz(_sz), mid(n/2), n2(n*n), mid2(n2/2), sum2(2*mid2), sumsz(sz*mid2),
-   x0(mid - sz/2), y0(0)
+   x0(mid - sz/2), y0(x0)
    {}
    int sz, mid, n2, mid2, sum2, sumsz, x0, y0;
 };
@@ -59,7 +59,10 @@ class SqrMagic {
   }
   bool backtrack(const BT& bt, seti_t& pending) {
     bool ok = false;
-    cout << "debug: #pending="<<pending.size() << "\n"; show();
+    if (false) {
+      cout << "debug: sz="<<bt.sz << ", #pending="<<pending.size() << "\n";
+      show();
+    }
     if (pending.empty()) {
       int xyend = bt.x0 + bt.sz - 1;
       int sbdy[4] = {0, 0, 0, 0};
@@ -67,7 +70,7 @@ class SqrMagic {
         sbdy[0] += get(bt.x0, bt.y0 + k);
         sbdy[1] += get(bt.x0 + k, bt.y0);
         sbdy[2] += get(xyend, bt.y0 + k);
-        sbdy[0] += get(bt.x0 + k, xyend);
+        sbdy[3] += get(bt.x0 + k, xyend);
       }
       ok = true;
       for (int i = 0; ok && (i < 4); ++i) {
@@ -85,7 +88,7 @@ class SqrMagic {
         int vc = bt.sum2 - v;
         seti_t::iterator pic = pending.find(vc);
         int cx = x, cy = bt.y0 + bt.sz - 1;
-        if (x == 0) {
+        if (x == bt.x0) {
           cx = bt.x0 + bt.sz - 1;
           if (y != bt.y0) {
             cy = y;
