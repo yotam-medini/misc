@@ -30,6 +30,12 @@ private:
  }
  bool solve_bdy(int sz) {
    bool solved = false;
+   int mid = n/2;
+   int n2 = n*n;
+   int mid2 = n2/2;
+   if (sz == 1) {
+     set(mid, mid, mid2);
+   }
    return solved;
  }
  int get(int x , int y) const { return _a[ixy(x, y)]; }
