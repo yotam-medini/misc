@@ -35,6 +35,11 @@ private:
    int mid2 = n2/2;
    if (sz == 1) {
      set(mid, mid, mid2);
+     solved = true;
+   } else {
+     int sum2 = 2*mid2;
+     int sumsz = sz*mid2;
+     int x0 = mid - sz/2, y0 = x0;
    }
    return solved;
  }
