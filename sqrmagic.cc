@@ -47,6 +47,11 @@ class SqrMagic {
       solved = true;
     } else {
       seti_t pending;
+      int half = 2*(sz - 1);
+      for (int k = 0; k < half; ++k) {
+        pending.insert(pending.end(), k);
+        pending.insert(pending.end(), bt.n2 - k - 1);
+      }
       solved = backtrack(bt, pending);
     }
     return solved;
@@ -69,4 +74,3 @@ int main(int argc, char **argv) {
   sqm.show();
   return rc;
 }
-
