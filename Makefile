@@ -11,7 +11,7 @@ LIBDIR=/usr/lib/i386-linux-gnu
 LIBGMP=${LIBDIR}/libgmpxx.a ${LIBDIR}/libgmp.a
 
 DBGFLAGS = -g
-CFLAGS = ${DBGFLAGS} -Wall -std=c++11 -MMD
+CFLAGS = ${DBGFLAGS} -Wall -std=c++14 -MMD
 
 CXXS := $(wildcard *.cc)
 OBJS = $(patsubst %.cc,obj.d/%.o,$(CXXS))
@@ -47,6 +47,15 @@ ratgeo-test-run: ${BINDIR}/ratgeo-test
 	$< lsintersection 0 0  1 1  -1 2  0 1
 	$< ssintersection 0 0  1 1  1 0  0 1
 	$< ssintersection 0 0  1 1  -1 2  0 1
+
+${BINDIR}/sqrmagic: obj.d/sqrmagic.o
+	@mkdir -p $(@D)
+	g++ -g -o $@ $<
+
+sqrmagic-test: ${BINDIR}/sqrmagic
+	$< 1
+	$< 2
+	$< 3
 
 clean:
 	rm -f ${OBJS}
