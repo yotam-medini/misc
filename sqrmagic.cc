@@ -48,9 +48,10 @@ class SqrMagic {
     } else {
       seti_t pending;
       int half = 2*(sz - 1);
-      for (int k = 0; k < half; ++k) {
-        pending.insert(pending.end(), k);
-        pending.insert(pending.end(), bt.n2 - k - 1);
+      int skip = (sz - 2)*(sz - 2)/2;
+      for (int k = 1; k <= half; ++k) {
+        pending.insert(pending.end(), bt.mid2 - skip - k);
+        pending.insert(pending.end(), bt.mid2 + skip + k);
       }
       solved = backtrack(bt, pending);
     }
@@ -58,23 +59,37 @@ class SqrMagic {
   }
   bool backtrack(const BT& bt, seti_t& pending) {
     bool ok = false;
-    cout << "debug: #pending="<<pending.size(); << "\n"; show();
+    cout << "debug: #pending="<<pending.size() << "\n"; show();
     if (pending.empty()) {
-      ok = True;
+      ok = true;
     } else {
       int x = bt.x0, y = bt.y0;
-      for (; (x < x0 + bt.sz) && (get(x, y) == -1); ++x) {}
-      if (x == x0 + bt.sz) {
-        for (x = x0; (y < y0 + bt.sz) && (get(x, y) == -1); ++y) {}
+      for (; (x < bt.x0 + bt.sz) && (get(x, y) == -1); ++x) {}
+      if (x == bt.x0 + bt.sz) {
+        for (x = bt.x0; (y < bt.y0 + bt.sz) && (get(x, y) == -1); ++y) {}
       }
-      for (seti_t::iterator pi = pending.begin(); (!ok) && (pi != pending.end());) {
-        if (pi != pending.end()) {
-          ++pi;
-        }
+      for (seti_t::iterator pi = pending.begin(); (!ok) && (pi != pending.end()); ++pi) {
         int v = *pi;
-        set(x, y, v);
         int vc = bt.sum2 - v;
-        
+        seti_t::iterator pic = pending.find(vc);
+        int cx = x, cy = bt.y0 + bt.sz- 1;
+        if (x == 0) {
+          cx = bt.x0 + bt.sz - 1;
+          if (y != bt.y0) {
+            cy = y;
+          }
+        }
+        set(x, y, v);
+        set(cx, cy, vc);
+        pending.erase(pi);
+        pending.erase(pic);
+        ok = backtrack(bt, pending);
+        if (!ok) {
+          set(x, y, -1);
+          set(cx, cy, -1);
+          pi = pending.insert(pending.end(), v);
+          pending.insert(pending.end(), vc);
+        }
       }
     }
     return ok;
