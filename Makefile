@@ -57,6 +57,13 @@ sqrmagic-test: ${BINDIR}/sqrmagic
 	$< 2
 	$< 3
 
+${BINDIR}/longaltseq: obj.d/longaltseq.o
+	@mkdir -p $(@D)
+	g++ -g -o $@ $<
+
+longaltseq-test: ${BINDIR}/longaltseq
+	$< rand 3 3
+
 clean:
 	rm -f ${OBJS}
 
