@@ -57,6 +57,9 @@ sqrmagic-test: ${BINDIR}/sqrmagic
 	$< 2
 	$< 3
 
+bin/tictac: tictac.cc
+	g++ ${CFLAGS} -o $@ tictac.cc
+
 ${BINDIR}/longaltseq: obj.d/longaltseq.o
 	@mkdir -p $(@D)
 	g++ -g -o $@ $<
