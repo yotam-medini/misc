@@ -27,15 +27,28 @@ class Grid {
     }
     os << ".---.\n";
   }
+  void strset(const char *s) {
+    u = 0;
+    for (u_t i = 0, y = 0; y < 3; ++y) {
+      for (u_t x = 0; s[i] && (x < 3); ++x, ++i) {
+        char c = s[i];
+        if (c == 'O') {
+          set(x, y, TIC_O);
+        } else if (c == 'X') {
+          set(x, y, TIC_X);
+        }
+      }
+    }
+  }
 private:
  static u_t shift(u_t x, u_t y) { return 2*(3*x+y); } 
  u_t u;
 };
-typedef map<Grid, int> grid2u_t; // -1 or u(x,y) who wins ?
+typedef pair<int, tic_res_t> ixy_res_t;
+typedef map<Grid, ixy_res_t> grid2u_t; // -1 or u(x,y) who wins ?
 bool operator<(const Grid& g0, const Grid& g1) {
   return g0.getu() < g1.getu(); 
 }
- 
 static void get_xy(u_t& x, u_t& y, int u) { x = u / 3; y = u % 3; }
 
 bool ox_won(const Grid& g, u_t ox) {
@@ -88,27 +101,60 @@ tic_res_t ox_best(const Grid& g, grid2u_t& memo, int ox, u_t depth=0) {
     cerr << "calls="<<calls<<'\n';
   }
   int opponent = (ox == TIC_O ? TIC_X : TIC_O);
+  tic_res_t won_res = (ox == TIC_O ? TIC_O_WON : TIC_X_WON);
+  tic_res_t lost_res = (ox == TIC_O ? TIC_X_WON : TIC_O_WON);
   auto er = memo.equal_range(g);
   grid2u_t::iterator iter = er.first;
-  bool won = false;
-  int ixy = - 1;
+  bool won = false, tied = false;
+  int ixy = - 1, tixy = -1, dixy = -1;
   if (er.first == er.second) { // not yet in memo
-    Grid gnext(g);
+    Grid gnext;
     for (int x = 0; (x != 3) && !won; ++x) {
       for (int y = 0; (y != 3) && !won; ++y) {
         if (g.get(x, y) == TIC_EMPTY) {
+          if (dixy == -1) { dixy = 3*x + y; } // default
           gnext = g;
           gnext.set(x, y, ox);
-          ret = ox_best(gnext, memo, opponent, depth);
+          won = ox_won(gnext, ox);
           if (won) {
             ixy = 3*x + y;
+          } else if ((tixy == -1) && is_tie(g)) {
+            tied = true;
+            tixy = 3*x + y;
           }
         }
       }
     }
-    memo.insert(iter, grid2u_t::value_type(gnext, ixy));
+    if (!won) {
+      if (tied) {
+        ixy = tixy;
+      } else {
+        for (int x = 0; (x != 3) && !won; ++x) {
+          for (int y = 0; (y != 3) && !won; ++y) {
+            if (g.get(x, y) == TIC_EMPTY) {
+              gnext = g;
+              gnext.set(x, y, ox);
+              tic_res_t opret = ox_best(gnext, memo, opponent, depth);
+              won = (opret == won_res);
+              if (won) {
+                ixy = 3*x + y;
+              } else if ((tixy == -1) && is_tie(g)) {
+                tied = true;
+                tixy = 3*x + y;
+              }
+            }
+          }
+        }
+        if (!won) {
+          ixy = tied ? tixy : dixy;
+        }
+      }
+    }
+    ret = (won ? won_res : (tied ? TIC_TIE : lost_res));
+    ixy_res_t ixy_res{ixy, ret};
+    memo.insert(iter, grid2u_t::value_type(gnext, ixy_res));
   } else {
-    won = (iter->second) >= 0;
+    ret = iter->second.second;
   }
   return ret;
 };
@@ -116,15 +162,16 @@ tic_res_t ox_best(const Grid& g, grid2u_t& memo, int ox, u_t depth=0) {
 int main(int argc, char** argv) {
   int rc = 0;
   grid2u_t memo;
-  u_t uini = (argc > 1 ? stoi(argv[1]) : 0);
-  cerr << "uini="<<uini << '\n';
-  Grid g(uini);
+  Grid g(0);
+  if (argc > 1) {
+    g.strset(argv[1]);
+  } 
   g.print();
 
     while (!(o_won(g) || x_won(g) || is_tie(g))) {
       u_t x, y;
       grid2u_t::const_iterator iter = memo.find(g);
-      int u = iter->second;
+      int u = iter->second.first;
       get_xy(x, y, u);
       cerr << "u="<<u<< ", x="<<x << ", y="<<y << '\n';
       g.set(x, y, TIC_O);
