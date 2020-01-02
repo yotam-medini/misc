@@ -108,12 +108,11 @@ tic_res_t ox_best(const Grid& g, grid2u_t& memo, int ox, u_t depth=0) {
   bool won = false, tied = false;
   int ixy = - 1, tixy = -1, dixy = -1;
   if (er.first == er.second) { // not yet in memo
-    Grid gnext;
     for (int x = 0; (x != 3) && !won; ++x) {
       for (int y = 0; (y != 3) && !won; ++y) {
         if (g.get(x, y) == TIC_EMPTY) {
           if (dixy == -1) { dixy = 3*x + y; } // default
-          gnext = g;
+          Grid gnext(g);
           gnext.set(x, y, ox);
           won = ox_won(gnext, ox);
           if (won) {
@@ -125,6 +124,7 @@ tic_res_t ox_best(const Grid& g, grid2u_t& memo, int ox, u_t depth=0) {
         }
       }
     }
+    cerr << __LINE__ << ": won="<<won << ", ixy="<<ixy << '\n';
     if (!won) {
       if (tied) {
         ixy = tixy;
@@ -132,7 +132,7 @@ tic_res_t ox_best(const Grid& g, grid2u_t& memo, int ox, u_t depth=0) {
         for (int x = 0; (x != 3) && !won; ++x) {
           for (int y = 0; (y != 3) && !won; ++y) {
             if (g.get(x, y) == TIC_EMPTY) {
-              gnext = g;
+              Grid gnext(g);
               gnext.set(x, y, ox);
               tic_res_t opret = ox_best(gnext, memo, opponent, depth);
               won = (opret == won_res);
@@ -152,7 +152,8 @@ tic_res_t ox_best(const Grid& g, grid2u_t& memo, int ox, u_t depth=0) {
     }
     ret = (won ? won_res : (tied ? TIC_TIE : lost_res));
     ixy_res_t ixy_res{ixy, ret};
-    memo.insert(iter, grid2u_t::value_type(gnext, ixy_res));
+    cerr << __LINE__ << ": g.u="<<g.getu() << ", ixy="<<ixy << '\n';
+    memo.insert(iter, grid2u_t::value_type(g, ixy_res));
   } else {
     ret = iter->second.second;
   }
@@ -168,7 +169,10 @@ int main(int argc, char** argv) {
   } 
   g.print();
 
-    while (!(o_won(g) || x_won(g) || is_tie(g))) {
+  tic_res_t res = ox_best(g, memo, TIC_O);
+  cerr << "res="<<int(res) << '\n';
+    bool play = !(o_won(g) || x_won(g) || is_tie(g));
+    while (play) {
       u_t x, y;
       grid2u_t::const_iterator iter = memo.find(g);
       int u = iter->second.first;
@@ -177,10 +181,14 @@ int main(int argc, char** argv) {
       g.set(x, y, TIC_O);
       cerr << "g.u=" << g.getu() << '\n';
       g.print();
-      cerr << "Enter x, y: "; cerr.flush();
-      cin >> x >> y;
-      cerr << "You entered: x="<<x << ", y="<<y<<'\n';
-      g.set(x, y, TIC_X);
+      play = !(o_won(g) || is_tie(g));
+      if (play) {
+        cerr << "Enter x, y: "; cerr.flush();
+        cin >> x >> y;
+        cerr << "You entered: x="<<x << ", y="<<y<<'\n';
+        g.set(x, y, TIC_X);
+        play = !(x_won(g) || is_tie(g));
+      }
     }
 
   return rc;
