@@ -60,16 +60,33 @@ sqrmagic-test: ${BINDIR}/sqrmagic
 bin/tictac: tictac.cc
 	g++ ${CFLAGS} -o $@ tictac.cc
 
-${BINDIR}/longaltseq: obj.d/longaltseq.o
+q${BINDIR}/longaltseq: obj.d/longaltseq.o
 	@mkdir -p $(@D)
 	g++ -g -o $@ $<
 
 longaltseq-test: ${BINDIR}/longaltseq
 	$< rand 3 3
 
+${BINDIR}/permdup: obj.d/permdup.o
+	@mkdir -p $(@D)
+	g++ -g -o $@ $<
+
+permdup-test: ${BINDIR}/permdup
+	$< a
+	$< ab
+	$< aba
+	$< ababc
+
+${BINDIR}/nqueens: obj.d/nqueens.o
+	@mkdir -p $(@D)
+	g++ -g -o $@ $<
+
+nqueens-test: ${BINDIR}/nqueens
+	for n in 1 2 3 4 5 6 7 8; do \
+	  $< $${n}; \
+	done
+
 clean:
 	rm -f ${OBJS}
 
 -include ${DEPS}
-
-
