@@ -4,7 +4,7 @@
 #include <utility>
 #include <map>
 using namespace std;
-typedef int pair<int, int> ii_t;
+typedef pair<int, int> ii_t;
 typedef map<ii_t, int> ii2i_t;
 
 static int _min_pali(const string& s, ii2i_t& memo, int l, int r) {
@@ -17,12 +17,12 @@ static int _min_pali(const string& s, ii2i_t& memo, int l, int r) {
       if (s[l] == s[r]) {
         ret = _min_pali(s, memo, l + 1, r - 1);
       } else {
-        int lret = _min_pali(s, memo, l + 1, r - 1);
-        int rret = _min_pali(s, memo, l, r + 1);
+        int lret = _min_pali(s, memo, l + 1, r);
+        int rret = _min_pali(s, memo, l, r - 1);
         ret = (lret < rret ? lret : rret) + 1;
       }
     }
-    memo.insert(er.first, i2i_t::value_type(key, ret));
+    memo.insert(er.first, ii2i_t::value_type(key, ret));
   } else {
     ret = er.first->second;
   }
@@ -31,14 +31,15 @@ static int _min_pali(const string& s, ii2i_t& memo, int l, int r) {
 
 int min_pali(const string& s) {
   ii2i_t memo;
-  int ret = (s.size() > 1) _min_pali(s, memo, 0, s.size() - 1) : 0);
+  int ret = (s.size() > 1) ? _min_pali(s, memo, 0, s.size() - 1) : 0;
   return ret;
 }
 
 int main(int argc, char** argv) {
   for (int ai = 1; ai < argc; ++ai) {
     const string s(argv[ai]);
-    cout << "Min-deleteiom for Palyindrom (" << s << ") = " << min_pali(s);
+    cout << "Min-deleteiom for Palyindrom (" << s << ") = " << min_pali(s) <<
+      '\n';
   }
   return 0;
 }
