@@ -86,6 +86,13 @@ nqueens-test: ${BINDIR}/nqueens
 	  $< $${n}; \
 	done
 
+${BINDIR}/minpali: obj.d/minpali.o
+	@mkdir -p $(@D)
+	g++ -g -o $@ $<
+
+minpali-test: ${BINDIR}/minpali
+	  $< anoxinixon
+
 clean:
 	rm -f ${OBJS}
 
