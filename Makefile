@@ -93,6 +93,15 @@ ${BINDIR}/minpali: obj.d/minpali.o
 minpali-test: ${BINDIR}/minpali
 	  $< anoxinixon
 
+${BINDIR}/nparen: obj.d/nparen.o
+	@mkdir -p $(@D)
+	g++ -g -o $@ $<
+
+nparen-test: ${BINDIR}/nparen
+	for n in 0 2 3 4 5 6 7 8; do \
+	  $< $${n}; \
+	done
+
 clean:
 	rm -f ${OBJS}
 
