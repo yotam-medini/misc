@@ -102,6 +102,21 @@ nparen-test: ${BINDIR}/nparen
 	  $< $${n}; \
 	done
 
+MIDIFILE_DIR = ${HOME}/pub/midifile
+MIDIFILE_INC = ${MIDIFILE_DIR}/include
+MIDIFILE_LIB = ${MIDIFILE_DIR}/lib
+obj.d/midiconv.o: midiconv.cc
+	@mkdir -p $(@D)
+	g++ -c -g -I${MIDIFILE_INC} -o $@ $<
+
+${BINDIR}/midiconv: obj.d/midiconv.o
+	@mkdir -p $(@D)
+	g++ -g -L${MIDIFILE_LIB} -o $@  $< -lmidifile
+	ls -lG $@
+
+test-midiconv: ${BINDIR}/midiconv
+	${BINDIR}/midiconv /tmp/esperanza.midi
+
 clean:
 	rm -f ${OBJS}
 
