@@ -1,10 +1,10 @@
 class Grid {
  public:
-  virtual int nr() const  = 0;
+  virtual int nr() const = 0;
   virtual int nc() const = 0;
   virtual int get(int i, int j) const = 0;
-  virtual set(int i, int j, int val) = 0;
-  bool valid(int i, int j) {
+  virtual void set(int i, int j, int val) = 0;
+  bool valid(int i, int j) const {
     return
       (0 <= i) && (i < nr()) &&
       (0 <= j) && (j < nc());
@@ -18,7 +18,7 @@ void color_bdy(Grid& g) {
         bool bdy = false;
         for (int si = -1; (si <= 1) && !bdy; ++si) {
           for (int sj = -1; (sj <= 1) && !bdy; ++sj) {
-            bdy = (!g.valid()) || (g.get(i, j) == 0);
+            bdy = (!g.valid(i + si, j + sj)) || (g.get(i + si, j + sj) == 0);
           }   
         }
         if (bdy) {
@@ -51,6 +51,6 @@ void recolor_bdy(Grid& g) {
 
 void set_islands_boundaries(Grid& g) {
   color_bdy(g);
-  zero_interior();
+  zero_interior(g);
   recolor_bdy(g);
 }

@@ -114,8 +114,14 @@ ${BINDIR}/midiconv: obj.d/midiconv.o
 	g++ -g -L${MIDIFILE_LIB} -o $@  $< -lmidifile
 	ls -lG $@
 
-test-midiconv: ${BINDIR}/midiconv
-	${BINDIR}/midiconv /tmp/esperanza.midi
+03.mid:
+	wget http://parischoralsociety.free.fr/stjean/03.mid
+
+midiconv-test: ${BINDIR}/midiconv 03.mid
+	${BINDIR}/midiconv -tv 1 1.5 20 -tv -1 0.6 -10 /tmp/esperanza.midi /tmp/ts.midi
+	ls -l /tmp/ts.midi
+	${BINDIR}/midiconv -tv 1 1.5 20 -tv -1 0.6 -10 03.mid 03-sop.midi
+	ls -lGt 03-sop.midi
 
 clean:
 	rm -f ${OBJS}
