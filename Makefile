@@ -123,6 +123,12 @@ midiconv-test: ${BINDIR}/midiconv 03.mid
 	${BINDIR}/midiconv -tv 1 1.5 20 -tv -1 0.6 -10 03.mid 03-sop.midi
 	ls -lGt 03-sop.midi
 
+
+${BINDIR}/nofear2tex: obj.d/nofear2tex.o
+	@mkdir -p $(@D)
+	g++ -g -L${MIDIFILE_LIB} -o $@  $< -lexpat
+	ls -lG $@
+
 clean:
 	rm -f ${OBJS}
 
