@@ -90,7 +90,7 @@ string xmlc2str(const xmlChar* x)
     return s;
 }
 
-string strip(const xmlChar* x)
+string strip_old(const xmlChar* x)
 {
     const char *p = (const char*)(x);
     char c;
@@ -105,6 +105,35 @@ string strip(const xmlChar* x)
     }
     string s(p, sz);
     return s;
+}
+
+string strip(const xmlChar* x)
+{
+    string s((const char*)(x));
+    int sz = s.size();
+    int ltrim = 0;
+    while ((ltrim < sz) && (isspace(s[ltrim])))
+    {
+        ++ltrim;
+    }
+    while ((sz > ltrim) && isspace(s[sz - 1]))
+    {
+        --sz;
+    }
+    string sws = s.substr(ltrim, sz - ltrim);
+    string ret;
+    for (char c: sws)
+    {
+        if ((c == L'’') || ((unsigned char)(c) == 0xe2))
+        {
+            ret.push_back('\'');
+        }
+        else if ((0 < c) && (c < 0x7f))
+        {
+            ret.push_back(c);
+        }
+    }
+    return ret;
 }
 
 class GState
@@ -275,11 +304,15 @@ void node_traverse(State& state, const xmlNodePtr p, size_t depth)
     {
         node_traverse(state, c, depth + 1);
     }
+
+    static const string newline_nl("\\newline\n");
+    static const size_t newline_nl_sz = newline_nl.size();
+
     if ((tag == s_div) || (tag == s_p))
     {
         if (state.in_table)
         {
-            state.td_text += "\\newline\n";
+            state.td_text += newline_nl;
         }
     }
     if (emphasize)
@@ -289,7 +322,14 @@ void node_traverse(State& state, const xmlNodePtr p, size_t depth)
     if ((tag == s_td) && (state.td >= 0))
     {
         if (state.td > 0) { cout << "& &\n"; }
+        size_t sz = state.td_text.size();
+        if ((newline_nl_sz < sz) && 
+            (state.td_text.substr(sz - newline_nl_sz) == newline_nl))
+        {
+            state.td_text.erase(sz - newline_nl_sz);
+        }
         cout << state.td_text;
+        
         state.td = -1;
     }
     if (tag == s_tr)
