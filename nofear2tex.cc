@@ -266,7 +266,7 @@ void node_traverse(State& state, const xmlNodePtr p, size_t depth)
                 static const string hspace_e("}}");
                 state.td_text += hsapce_b + content + hspace_e;
             }
-            else
+            else if (!content.empty())
             {
                 if ((!state.td_text.empty()) && (!isspace(state.td_text.back())))
                 {
@@ -306,6 +306,7 @@ void node_traverse(State& state, const xmlNodePtr p, size_t depth)
     }
 
     static const string newline_nl("\\newline\n");
+    static const string newline_nl_rb = newline_nl + string("}");
     static const size_t newline_nl_sz = newline_nl.size();
 
     if ((tag == s_div) || (tag == s_p))
@@ -327,6 +328,12 @@ void node_traverse(State& state, const xmlNodePtr p, size_t depth)
             (state.td_text.substr(sz - newline_nl_sz) == newline_nl))
         {
             state.td_text.erase(sz - newline_nl_sz);
+        }
+        else if ((newline_nl_sz + 1 < sz) &&
+            (state.td_text.substr(sz - (newline_nl_sz + 1)) == newline_nl_rb))
+        {
+            state.td_text.erase(sz - (newline_nl_sz + 1));
+            state.td_text.push_back('}');
         }
         cout << state.td_text;
         
