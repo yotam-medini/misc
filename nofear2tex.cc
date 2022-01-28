@@ -1,65 +1,153 @@
 // Convert NoFear HTMLs to LaTeX long tables
 #include <iostream>
+#include <vector>
 #include <unordered_set>
-#include <expat.h>
-#include <unistd.h>
-#include <sys/stat.h>
+#include <libxml/HTMLparser.h>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
 
 using namespace std;
 
 typedef unordered_set<string> sets_t;
 sets_t tags_seen;
 
-void start(void *userData, const char *name, const char *args[])
-{
-    const string sname(name);
-    if (tags_seen.find(sname) == tags_seen.end())
-    {
-        tags_seen.insert(tags_seen.end(), sname);
-        cerr << "tag: " << sname << "\n";
-    }
-    if (sname == string("table"))
-    {
-        cerr << "table\n";
-    }
-}
- 
-void value(void *userData, const char *val, int len)
-{
-    string sval(val, len);
-    if (false) { cerr << "sval="<<sval << '\n'; }
-}
+typedef vector<string> vs_t;
 
-void end(void *userData, const char *name)
+class Property
 {
-    const string sname(name);
-    if (sname == string("table"))
+ public:
+    string key;
+    vs_t values;
+};
+typedef vector<Property> vproperty_t;
+
+void props_print(const vproperty_t& props)
+{
+    for (const Property& p: props)
     {
-        cerr << "table\n";
+        cerr << "  " << p.key << ":";
+        for (const string& v: p.values) { cerr << ' ' << v; }
+        cerr << '\n';
     }
 }
 
-int nofear_to_latex(XML_Parser parser, const char *fn)
+string xmlc2str(const xmlChar* x)
 {
-    struct stat statbuf;
-    int rc = stat(fn, &statbuf);
-    if (rc == 0)
+    string s((const char*)(x));
+    return s;
+}
+
+class State
+{
+ public:
+    State() :
+        in_table(false),
+        in_div(false),
+        line_number(false),
+        td(-1)
     {
-        size_t fsz = statbuf.st_size;
-        char *buf = new char[fsz + 1];
-        FILE* f = fopen(fn, "r");
-        size_t nb = fread(buf, sizeof(char), fsz, f);
-        fclose(f);
-        if (nb != fsz)
+    }
+    string act_x_scene_y;
+    bool in_table;
+    bool in_div;
+    bool line_number;
+    int td;
+};
+
+void node_get_properties(vproperty_t& props, const xmlNodePtr p)
+{
+    props.clear();
+    for (xmlAttrPtr a = p->properties; a; a = a->next)
+    {
+        Property property;
+        property.key = xmlc2str(a->name);
+        for (xmlNodePtr v = a->children; v; v = v->next)
         {
-            cerr << nb << " bytes read of " << fsz << " sized " << fn << '\n';
+            property.values.push_back(xmlc2str(v->content));
         }
-        XML_Status rc_parse = XML_Parse(parser, buf, nb, XML_TRUE);
-        cerr << "rc_parse=" << rc_parse << "\n";
+        props.push_back(property);
+    }
+}
+
+void node_traverse(State& state, const xmlNodePtr p, size_t depth)
+{
+    static const string s_meta("meta");
+    static const string s_table("table");
+    static const string s_div("div");
+    static const string s_scan("scan");
+    static const string s_tr("tr");
+    static const string s_td("td");
+
+    const string indent = string(2 * depth, ' ');
+    const string tag((const char*)(p->name));
+    cerr << indent << tag << ", type=" << p->type << '\n';
+    bool is_table = false, is_div = false;
+    if (tag == s_meta)
+    {
+        cerr << "meta\n";
+        vproperty_t props;
+        node_get_properties(props, p);
+        props_print(props);
+    }
+    for (xmlNodePtr c = p->children; c; c = c->next)
+    {
+        node_traverse(state, c, depth + 1);
+    }
+}
+
+void traverse(const htmlDocPtr p)
+{
+    State state;
+    for (xmlNodePtr c = p->children; c; c = c->next)
+    {
+        node_traverse(state, c, 0);
+    }
+}
+
+#if 0
+void element_traverse(const xmlDtdPtr p, size_t depth)
+{
+    cout << string(2 * depth, ' ') << p->name << '\n';
+#if 0
+    for (xmlDtdPtr c = p->children; c; c = c->next)
+    {
+        element_traverse(c, depth + 1);
+    }
+#endif
+}
+
+void etraverse(const htmlDocPtr p)
+{
+    for (xmlDtdPtr e = p->intSubset; e; e = e->next)
+    {
+        element_traverse(e, 0);
+    }
+}
+#endif
+
+int nofear_to_latex(const char *fn)
+{
+    int rc = 0;    
+    // htmlDocPtr p = htmlParseFile(fn, nullptr);
+#if 0
+    int options = HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING;
+    htmlDocPtr p = htmlReadFile(fn, nullptr, options);
+#else
+    int options = 
+        XML_PARSE_RECOVER | 
+        XML_PARSE_NOERROR |
+        XML_PARSE_NOWARNING;
+    xmlDoc *p = xmlReadFile(fn, nullptr, options);
+#endif
+    if (p)
+    {
+        traverse(p);
+        xmlFreeDoc(p);
     }
     else
     {
-       cerr << "Failed to stat(" << fn << '\n'; 
+        cerr << "Failed to parse " << fn << '\n';
+        rc = 1;
     }
     return rc;
 }
@@ -68,15 +156,10 @@ int main(int argc, char **argv)
 {
     int rc = 0;
 
-    XML_Parser parser = XML_ParserCreate(NULL);
-    XML_SetElementHandler(parser, start, end);
-    XML_SetCharacterDataHandler(parser, value);
-   
     for (int ai = 1; (rc == 0) && (ai < argc); ++ai)
     {
-        rc = nofear_to_latex(parser, argv[ai]);
+        rc = nofear_to_latex(argv[ai]);
     }
 
-    XML_ParserFree(parser);
     return rc;
 }

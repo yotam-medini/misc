@@ -124,9 +124,14 @@ midiconv-test: ${BINDIR}/midiconv 03.mid
 	ls -lGt 03-sop.midi
 
 
+obj.d/nofear2tex.o: nofear2tex.cc
+	@mkdir -p $(@D)
+	g++ -c -I/usr/include/libxml2 ${CFLAGS} -o $@ $<
+
+
 ${BINDIR}/nofear2tex: obj.d/nofear2tex.o
 	@mkdir -p $(@D)
-	g++ -g -L${MIDIFILE_LIB} -o $@  $< -lexpat
+	g++ -g -L${MIDIFILE_LIB} -o $@  $< -lxml2
 	ls -lG $@
 
 clean:
