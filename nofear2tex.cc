@@ -189,6 +189,8 @@ void node_traverse(State& state, const xmlNodePtr p, size_t depth)
     static const string s_table("table");
     static const string s_td("td");
     static const string s_text("text");
+    static const string s_tooltip_head("noFear__tooltip__popup__heading");
+    static const string s_tooltip_cooy("noFear__tooltip__popup__copy");
     static const string s_tr("tr");
     static const string
         interior_header("interior-header__title__text__pagetitle");
@@ -205,6 +207,9 @@ void node_traverse(State& state, const xmlNodePtr p, size_t depth)
     state.classes.push_back(Classes(classes, context));
     const bool is_stage = (tag == s_div) &&
        (context.find(s_stage) != context.end());
+    const bool is_tooltip = 
+        (context.find(s_tooltip_head) != context.end()) ||
+        (context.find(s_tooltip_cooy) != context.end());
     const bool italize = (tag == s_i);
     const bool emphasize = state.in_table && (is_stage || italize);
 
@@ -246,7 +251,7 @@ void node_traverse(State& state, const xmlNodePtr p, size_t depth)
     {
         state.td_text += "\\emph{";
     }
-    if (tag == s_text)
+    if ((tag == s_text) && !is_tooltip)
     {
         if (state.td >= 0)
         {
@@ -311,7 +316,7 @@ void node_traverse(State& state, const xmlNodePtr p, size_t depth)
 
     if ((tag == s_div) || (tag == s_p))
     {
-        if (state.in_table)
+        if (state.in_table && !is_tooltip)
         {
             state.td_text += newline_nl;
         }
