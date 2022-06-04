@@ -139,6 +139,8 @@ string strip(const xmlChar* x)
 class GState
 {
  public:
+    GState() : html(false) {}
+    bool html;
     string act_x_scene_y;
 };
 
@@ -387,14 +389,39 @@ int nofear_to_latex(GState &gstate, const char *fn)
     return rc;
 }
 
+int html_nofear_to_latex(GState &gstate, const char *fn)
+{
+    int rc = 0;    
+    htmlDocPtr p = htmlParseFile(fn, "utf-8");
+    if (p)
+    {
+        traverse(gstate, p);
+        // htmlFreeParserCtxt(p);
+    }
+    else
+    {
+        cerr << "Failed to parse " << fn << '\n';
+        rc = 1;
+    }
+    return rc;
+}
+
 int main(int argc, char **argv)
 {
     int rc = 0;
     GState gstate;
-
-    for (int ai = 1; (rc == 0) && (ai < argc); ++ai)
+    int ai = 1;
+    if ((argc > 1) && (string(argv[1]) == string("-html")))
     {
-        rc = nofear_to_latex(gstate, argv[ai]);
+        gstate.html = true;
+        ai = 2;
+    }
+    
+    for (; (rc == 0) && (ai < argc); ++ai)
+    {
+        rc = (gstate.html 
+            ? html_nofear_to_latex(gstate, argv[ai])
+            : nofear_to_latex(gstate, argv[ai]));
     }
 
     return rc;

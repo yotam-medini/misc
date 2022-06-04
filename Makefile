@@ -128,11 +128,21 @@ obj.d/nofear2tex.o: nofear2tex.cc
 	@mkdir -p $(@D)
 	g++ -c -I/usr/include/libxml2 ${CFLAGS} -o $@ $<
 
-
-${BINDIR}/nofear2tex: obj.d/nofear2tex.o
+LXMLDIR=/home/yotam/pub/libxml2/.libs
+#	g++ -g -Wl,-L${LXMLDIR} -Wl,-R${LXMLDIR} -o $@  $< -lxml2
+${BINDIR}/nofear2tex: obj.d/nofear2tex.o Makefile
 	@mkdir -p $(@D)
-	g++ -g -L${MIDIFILE_LIB} -o $@  $< -lxml2
-	ls -lG $@
+	g++ -g -o $@  $< -lxml2
+	ldd $@; ls -lG $@
+
+obj.d/litcharts2tex.o: litcharts2tex.cc
+	@mkdir -p $(@D)
+	g++ -g -c -I/usr/include/libxml2 ${CFLAGS} -o $@ $<
+
+${BINDIR}/litcharts2tex: obj.d/litcharts2tex.o Makefile
+	@mkdir -p $(@D)
+	g++ -g -o $@  $< -lxml2
+	ldd $@; ls -lG $@
 
 clean:
 	rm -f ${OBJS}
