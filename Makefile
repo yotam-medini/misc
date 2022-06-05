@@ -142,7 +142,7 @@ obj.d/litcharts2tex.o: litcharts2tex.cc
 ${BINDIR}/litcharts2tex: obj.d/litcharts2tex.o Makefile
 	@mkdir -p $(@D)
 	g++ -g -o $@  $< -lxml2
-	ldd $@; ls -lG $@
+	ls -lG $@
 
 clean:
 	rm -f ${OBJS}
