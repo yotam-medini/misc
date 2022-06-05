@@ -1,3 +1,4 @@
+
 // Convert NoFear HTMLs to LaTeX long tables
 #include <cctype>
 #include <cstring>
@@ -310,6 +311,13 @@ static void node_traverse(State& state, const xmlNodePtr p, size_t depth)
     const bool col_translate =
         vs_has(classes, s_col) && vs_has(classes, s_modern_translaion);
     const char *safe_content = ((char *)(p->content) ? : "");
+    string strip_safe_content = strip(safe_content);
+    if (strip_safe_content.empty())
+    {
+        ostringstream oss;
+        state.write_location(oss, p);
+        strip_safe_content = string(" %\n% ") + oss.str() + string("\n");
+    }
     if (class0 == s_main_title)
     {
         string header = xmlc2str(p->children->content);
@@ -360,7 +368,7 @@ static void node_traverse(State& state, const xmlNodePtr p, size_t depth)
         }
         else
         {
-            cout << safe_content;
+            cout << strip_safe_content;
         }
         traverse_children(state, p, depth + 1);
         if (stage_direction || character_heading)
@@ -380,8 +388,8 @@ static void node_traverse(State& state, const xmlNodePtr p, size_t depth)
                     line_number << "}}";
                 state.line_number = -1;
             }
-            cout << safe_content;
-            const string strip_safe_content = strip(safe_content);
+            cout << strip_safe_content;
+            // const string strip_safe_content = strip(safe_content);
             if (false && (line_number != -1) && !strip_safe_content.empty())
             {
                 cout << "\\newline % ln=" << line_number << ' ';
@@ -392,7 +400,7 @@ static void node_traverse(State& state, const xmlNodePtr p, size_t depth)
     }
     else if ((tag == s_span) && state.in_table)
     {
-        cout << safe_content;
+        cout << strip_safe_content;
         bool translation_line = vs_has(classes, s_shakespeare_translation_line);
         if (translation_line && state.original)
         {
@@ -402,17 +410,17 @@ static void node_traverse(State& state, const xmlNodePtr p, size_t depth)
         if (translation_line)
         {
             state.line_number = -1;
-          if (false) {
+          if (true) {
             cout << "\\newline % ";
             if (state.original) { cout << "ln="<<state.line_number<<' '; }
             state.write_location(cout, p);
             cout << '\n';
           }
         }
-        if (vs_has(classes, s_line_mapping))
+        if (state.translation && vs_has(classes, s_line_mapping))
         {
             cout << "\\newline % ";
-            if (state.original) { cout << "ln="<<state.line_number<<' '; }
+            // if (state.original) { cout << "ln="<<state.line_number<<' '; }
             state.write_location(cout, p);
             cout << '\n';
         }
