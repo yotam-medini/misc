@@ -91,9 +91,9 @@ string xmlc2str(const xmlChar* x)
     return s;
 }
 
-string strip(const xmlChar* x)
+string strip(const char* x)
 {
-    string s((const char*)(x));
+    string s(x);
     int sz = s.size();
     int ltrim = 0;
     while ((ltrim < sz) && (isspace(s[ltrim])))
@@ -120,6 +120,11 @@ string strip(const xmlChar* x)
     return ret;
 }
 
+string strip(const xmlChar* x)
+{
+    return strip((const char*)(x));
+}
+
 class GState
 {
  public:
@@ -137,6 +142,7 @@ class State
         in_table(false),
         original(false),
         translation(false),
+        may_newline(true),
         line_number(-1)
     {
     }
@@ -146,15 +152,24 @@ class State
          sets_add(context, more_classes);
          classes.push_back(Classes(more_classes, context));
     }
-    void write_location(ostream& os)
+    void write_location(ostream& os, const xmlNodePtr p)
     {
-        os << gstate.fn << ':' << line_number;
+        os << gstate.fn << ':' << p->line;
     }
     void pop_classes() { classes.pop_back(); }
+    void newline(ostream &cout)
+    {
+        if (may_newline)
+        {
+            cout << "\\newline";
+            may_newline = false;
+        }
+    }
     GState& gstate;
     bool in_table;
     bool original;
     bool translation;
+    bool may_newline;
     int line_number;
     vclasses_t classes;
 };
@@ -195,7 +210,7 @@ if (debug_line_number) { cerr << __func__ << " key=" << key << ", dlc="<<data_li
      {
             const xmlNodePtr child = a->children;
             const char *cs_line_number =
-                child ? "-1" : (const char*)(child->content);
+                child ? (const char*)(child->content) : "-1";
             line_number = strtol(cs_line_number, nullptr, 0);
         }
     }
@@ -247,6 +262,7 @@ static void node_traverse(State& state, const xmlNodePtr p, size_t depth)
     static const string s_comparison_row("comparison-row");
     static const string s_div("div");
     static const string s_i("i");
+    static const string s_line_mapping("line-mapping");
     static const string s_main_title("main-title");
     static const string s_meta("meta");
     static const string s_modern_translaion("modern-translation");
@@ -305,7 +321,7 @@ static void node_traverse(State& state, const xmlNodePtr p, size_t depth)
     if ((tag == s_div) && (class0 == s_comparison_row))
     {
         state.in_table = true;
-        cout << "%% " << state.gstate.fn << ':' << p->line << '\n';
+        cout << "%% "; state.write_location(cout, p); cout << '\n';
         cout << "\\begin{longtable}{"
             "p{.50\\textwidth} p{0.04\\textwidth} p{.40\\textwidth} }\n";
         debug_line_number = p->line >= 687;
@@ -358,19 +374,27 @@ static void node_traverse(State& state, const xmlNodePtr p, size_t depth)
         if (*safe_content)
         {
             const int line_number = state.line_number;
-            if (line_number % 5 == 9)
+            if (line_number % 5 == 0)
             {
                 cout << "\\hspace*{-20pt}\\hbox to 20pt{\\texttt{" << 
-                    line_number << "}";
+                    line_number << "}}";
+                state.line_number = -1;
             }
             cout << safe_content;
+            const string strip_safe_content = strip(safe_content);
+            if (false && (line_number != -1) && !strip_safe_content.empty())
+            {
+                cout << "\\newline % ln=" << line_number << ' ';
+                state.write_location(cout, p);
+                cout << '\n';
+            }
         }
     }
     else if ((tag == s_span) && state.in_table)
     {
         cout << safe_content;
         bool translation_line = vs_has(classes, s_shakespeare_translation_line);
-        if (translation_line)
+        if (translation_line && state.original)
         {
             state.line_number = get_line_number(p);
         }
@@ -378,7 +402,19 @@ static void node_traverse(State& state, const xmlNodePtr p, size_t depth)
         if (translation_line)
         {
             state.line_number = -1;
-            cout << "\\newline\n % ";  state.write_location(cout);
+          if (false) {
+            cout << "\\newline % ";
+            if (state.original) { cout << "ln="<<state.line_number<<' '; }
+            state.write_location(cout, p);
+            cout << '\n';
+          }
+        }
+        if (vs_has(classes, s_line_mapping))
+        {
+            cout << "\\newline % ";
+            if (state.original) { cout << "ln="<<state.line_number<<' '; }
+            state.write_location(cout, p);
+            cout << '\n';
         }
     }
     else if ((tag == s_br) && state.in_table)
