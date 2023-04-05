@@ -15,16 +15,28 @@ class TransformNote
 };
 typedef vector<TransformNote> vtfn_t;
 
+class MoveNote
+{
+ public:
+    MoveNote(int t=0, int e=0, int n=0) : track(t), event_index(e), note(n) {}
+    int track;
+    int event_index;
+    int note;
+};
+typedef vector<MoveNote> vmvn_t;
+
 class MidiConv
 {
  public:
     MidiConv(
         smf::MidiFile& _mf,
         const vtfn_t& tnfv,
+        const vmvn_t& mvns,
         bool _verbose=false
     ) :
         mf(_mf),
         trans_notes_velocity(tnfv),
+        move_notes(mvns),
         verbose(_verbose),
         pxform_note_default(nullptr)
     {
@@ -41,8 +53,11 @@ class MidiConv
     bool verbose;
     const TransformNote* pxform_note_of_track_index(int track) const;
     void xform_event_velocity(const TransformNote& x, smf::MidiEvent& e);
+    const MoveNote* find_move_note(int track, int event_index) const;
+    void move_note(const MoveNote& mvn, smf::MidiEvent& e);
     smf::MidiFile& mf;
     vtfn_t trans_notes_velocity;
+    vmvn_t move_notes;
     const TransformNote *pxform_note_default;
 };
 
@@ -66,21 +81,27 @@ int MidiConv::run()
                 cout << "trackname(" << ti << "): " << e.getMetaContent() <<
                      '\n';
             }
+            if (verbose)
+            {
+                cout << ti << "/" << ei << ": " << 
+                    (e.isNoteOn() ? "NoteOn " : "NoteOff") <<
+                    ", key: " << e.getKeyNumber() <<
+                    ", velocity: " << e.getVelocity() << 
+                    ", tick: " << e.tick <<
+                    ", duration-" << e.getDurationInSeconds() << '\n';
+            }
             if (e.isNoteOn())
             {
                 ++n_notes_on;
-                if (verbose)
-                {
-                    cout << ti << "/" << ei << ": NoteOn" <<
-                        ", key: " << e.getKeyNumber() <<
-                        ", velocity: " << e.getVelocity() << 
-                        ", tick-" << e.tick <<
-                        ", duration-" << e.getDurationInSeconds() << '\n';
-                }
                 if (px)
                 {
                     xform_event_velocity(*px, e);
                 }
+            }
+            const MoveNote* pmn = find_move_note(ti, ei);
+            if (pmn)
+            {
+                 move_note(*pmn, e);
             }
         }
     }
@@ -109,6 +130,24 @@ void MidiConv::xform_event_velocity(const TransformNote& x, smf::MidiEvent& e)
     e.setVelocity(v);
 }
 
+const MoveNote* MidiConv::find_move_note(int track, int event_index) const
+{
+    const MoveNote *ret = nullptr;
+    for (const MoveNote& mvn: move_notes)
+    {
+        if ((mvn.track == track) && (mvn.event_index == event_index))
+        {
+            ret = &mvn;
+        }
+    }
+    return ret;
+}
+
+void MidiConv::move_note(const MoveNote& move_note, smf::MidiEvent& e)
+{
+    e.setKeyNumber(move_note.note);
+}
+
 class UMidiConv
 {
  public:
@@ -121,12 +160,15 @@ class UMidiConv
     const char* fn_in;
     const char* fn_out;
     vtfn_t trans_notes_velocity;
+    vmvn_t move_notes;
+    bool verbose;
 };
 
 UMidiConv::UMidiConv(int argc, char **argv) :
     rc(0),
     fn_in(nullptr),
-    fn_out(nullptr)
+    fn_out(nullptr),
+    verbose(false)
 {
     int ai = 1;
     for ( ; (rc == 0) && (ai < argc) && (argv[ai][0] == '-'); )
@@ -146,6 +188,17 @@ UMidiConv::UMidiConv(int argc, char **argv) :
                  cerr << "missing -tv values\n";
                  rc = 1;
              }
+         }
+         else if (opt == string("-note"))
+         {
+             int t = (ai < argc ? strtoul(argv[ai++], 0, 0) : -1);
+             int ei = (ai < argc ? strtoul(argv[ai++], 0, 0) : -1);
+             int n = (ai < argc ? strtoul(argv[ai++], 0, 0) : -1);
+             move_notes.push_back(MoveNote(t, ei, n));
+         }
+         else if (opt == string("-v"))
+         {
+             verbose = true;
          }
          else
          {
@@ -174,7 +227,9 @@ void UMidiConv::usage(const char *p0) const
     cerr << "Usage: \n" <<
         p0 << '\n' << 
         "  [-tv <n> <a> <b>]  # Change velocity for track <n>, V := aV + b\n"
-        "                     # (n = -1 all other tracks) Repeatable\n";
+        "                     # (n = -1 all other tracks) Repeatable\n"
+        "  [-note <m> <n>]    # Force the <m>-th note to be <n>\n"
+        "  [-v]               # verbose\n"
         "  <in midi> <out midi>\n";
 }
 
@@ -188,7 +243,7 @@ int UMidiConv::run()
     }
     if (rc == 0)
     {
-        MidiConv mc(mf, trans_notes_velocity);
+        MidiConv mc(mf, trans_notes_velocity, move_notes, verbose);
         rc = mc.run();
     }
     if (rc == 0)
