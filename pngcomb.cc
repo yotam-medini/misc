@@ -90,6 +90,8 @@ static int Combine(
             (shift[1] <= y) && (y < i.Height() + shift[1])) {
           png::rgb_pixel ipixel = i.GetPixelShited(x, y);
           MinBy(pixel.red, ipixel.red);
+          MinBy(pixel.green, ipixel.green);
+          MinBy(pixel.blue, ipixel.blue);
         }
       }
     }
@@ -120,6 +122,9 @@ int main(int argc, char **argv) {
     ai2_t out_size = GetOutputSize(in_pngs);
     png::image<png::rgb_pixel> png_out(out_size[0], out_size[1]);
     rc = Combine(png_out, in_pngs);
+    if (rc == 0) {
+      png_out.write(vm["output"].as<std::string>());
+    }
   }
   return rc;
 }
