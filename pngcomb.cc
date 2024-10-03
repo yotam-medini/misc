@@ -1,16 +1,26 @@
+#include <array>
 #include <charconv>
 #include <iostream>
 #include <vector>
 #include <boost/program_options.hpp>
 #include <png++/png.hpp>
 
+using ai2_t = std::array<int, 2>;
+
 class PngInput {
  public:
   PngInput(const std::string& path, int x_shift=0, int y_shift=0) :
     path_{path}, x_shift_{x_shift}, y_shift_{y_shift} {
     image_.read(path);
+    std::cerr << path << " w="<<Width() << " h="<<Height() << '\n';
   }
-  const png::rgb_pixel& GetPixel(int x, int y) const { return image_[x][y]; }
+  const png::rgb_pixel& GetPixel(int x, int y) const { return image_[y][x]; }
+  const png::rgb_pixel GetPixelShited(int x, int y) const {
+    return GetPixel(x - x_shift_, y - x_shift_);
+  }
+  size_t Width() const { return image_.get_width(); }
+  size_t Height() const { return image_.get_height(); }
+  ai2_t Shift() const { return ai2_t{x_shift_, y_shift_}; }
  private:
   const std::string path_;
   const int x_shift_;
@@ -44,6 +54,49 @@ static int GetImages(
   return rc;
 }
 
+static void MaxBy(int &v, int x) {
+  if (v < x) { v = x; }
+}
+
+template <typename T>
+static void MinBy(T &v, T x) {
+  if (v > x) { v = x; }
+}
+
+static ai2_t GetOutputSize(const std::vector<PngInput>& inputs) {
+  int w_out = 0, h_out = 0;
+  for (const PngInput &i: inputs) {
+    const ai2_t shift = i.Shift();
+    MaxBy(w_out, i.Width() + shift[0]);
+    MaxBy(h_out, i.Height() + shift[1]);
+  }
+  std::cerr << "w_out="<<w_out << " h_out="<<h_out << '\n';
+  return ai2_t{w_out, h_out};
+}
+
+static int Combine(
+    png::image<png::rgb_pixel> &out,
+    const std::vector<PngInput>& inputs) {
+  int rc = 0;
+  const int w_out = out.get_width();
+  const int h_out = out.get_height();
+  for (int x = 0; x < w_out; ++x) {
+    for (int y = 0; y < h_out; ++y) {
+      png::rgb_pixel& pixel = out[y][x];
+      pixel.red = pixel.green = pixel.blue = 0xff;
+      for (const PngInput &i: inputs) {
+        const ai2_t shift = i.Shift();
+        if ((shift[0] <= x) && (x < i.Width() + shift[0]) &&
+            (shift[1] <= y) && (y < i.Height() + shift[1])) {
+          png::rgb_pixel ipixel = i.GetPixelShited(x, y);
+          MinBy(pixel.red, ipixel.red);
+        }
+      }
+    }
+  }
+  return rc;
+}
+
 int main(int argc, char **argv) {
   namespace po = boost::program_options;
   int rc = 0;
@@ -64,6 +117,9 @@ int main(int argc, char **argv) {
   } else {
     std::vector<PngInput> in_pngs;
     GetImages(in_pngs, vm["input"].as<std::vector<std::string>>());
+    ai2_t out_size = GetOutputSize(in_pngs);
+    png::image<png::rgb_pixel> png_out(out_size[0], out_size[1]);
+    rc = Combine(png_out, in_pngs);
   }
   return rc;
 }
