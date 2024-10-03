@@ -16,7 +16,7 @@ class PngInput {
   }
   const png::rgb_pixel& GetPixel(int x, int y) const { return image_[y][x]; }
   const png::rgb_pixel GetPixelShited(int x, int y) const {
-    return GetPixel(x - x_shift_, y - x_shift_);
+    return GetPixel(x - x_shift_, y - y_shift_);
   }
   size_t Width() const { return image_.get_width(); }
   size_t Height() const { return image_.get_height(); }
