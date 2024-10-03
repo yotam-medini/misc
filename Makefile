@@ -11,12 +11,15 @@ LIBDIR=/usr/lib/i386-linux-gnu
 LIBGMP=${LIBDIR}/libgmpxx.a ${LIBDIR}/libgmp.a
 
 DBGFLAGS = -g
-CFLAGS = ${DBGFLAGS} -Wall -std=c++14 -MMD
+CFLAGS = ${DBGFLAGS} -Wall -std=c++20 -MMD
 
 CXXS := $(wildcard *.cc)
 OBJS = $(patsubst %.cc,obj.d/%.o,$(CXXS))
 DEPS = $(patsubst %.cc,obj.d/%.d,$(CXXS))
 BINDIR = bin
+
+BOOST_PO_LIB = -lboost_program_options
+PNGXX_LIB = -lpng
 
 objs: ${OBJS}
 
@@ -123,6 +126,17 @@ midiconv-test: ${BINDIR}/midiconv 03.mid
 	${BINDIR}/midiconv -tv 1 1.5 20 -tv -1 0.6 -10 03.mid 03-sop.midi
 	ls -lGt 03-sop.midi
 
+obj.d/pngcomb.o: pngcomb.cc
+	@mkdir -p $(@D)
+	g++ -c -g -I${MIDIFILE_INC} -o $@ $<
+
+${BINDIR}/pngcomb: obj.d/pngcomb.o
+	@mkdir -p $(@D)
+	g++ -g  -o $@ $< ${BOOST_PO_LIB} ${PNGXX_LIB}
+	ls -lG $@
+
+pngcomb-test: ${BINDIR}/pngcomb Makefile
+	true
 
 obj.d/nofear2tex.o: nofear2tex.cc
 	@mkdir -p $(@D)
